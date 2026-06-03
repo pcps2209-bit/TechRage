@@ -1,0 +1,752 @@
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import Footer from "@/components/layout/Footer";
+import { 
+  User, 
+  Phone, 
+  MapPin, 
+  Package, 
+  FileCheck,
+  ArrowLeft,
+  ArrowRight,
+  CheckCircle2,
+  Truck,
+  Building2
+} from "lucide-react";
+
+const steps = [
+  { id: 1, title: "Personal Details", icon: User },
+  { id: 2, title: "Contact Info", icon: Phone },
+  { id: 3, title: "Address", icon: MapPin },
+  { id: 4, title: "Sample Method", icon: Package },
+  { id: 5, title: "Consent", icon: FileCheck },
+];
+
+const bloodTypes = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
+
+// Nepal Administrative Data Structure
+const nepalAdminData: any = {
+  "Bagmati Province": {
+    "Kathmandu": {
+      municipalities: ["Kathmandu Metropolitan", "Kirtipur Municipality", "Budhanilkantha Municipality"],
+      wards: Array.from({length: 32}, (_, i) => `Ward ${i + 1}`)
+    },
+    "Bhaktapur": {
+      municipalities: ["Bhaktapur Municipality", "Madhyapur Thimi Municipality", "Suryabinayak Municipality"],
+      wards: Array.from({length: 15}, (_, i) => `Ward ${i + 1}`)
+    },
+    "Lalitpur": {
+      municipalities: ["Lalitpur Metropolitan", "Godawari Municipality", "Mahalaxmi Municipality"],
+      wards: Array.from({length: 29}, (_, i) => `Ward ${i + 1}`)
+    },
+    "Chitwan": {
+      municipalities: ["Bharatpur Metropolitan", "Rapti Municipal", "Kalika Municipality"],
+      wards: Array.from({length: 29}, (_, i) => `Ward ${i + 1}`)
+    }
+  },
+  "Province 1": {
+    "Morang": {
+      municipalities: ["Biratnagar Metropolitan", "Urlabari Municipality", "Sundarharaicha Municipality"],
+      wards: Array.from({length: 20}, (_, i) => `Ward ${i + 1}`)
+    },
+    "Jhapa": {
+      municipalities: ["Damak Municipality", "Birtamod Municipality", "Mechinagar Municipality"],
+      wards: Array.from({length: 15}, (_, i) => `Ward ${i + 1}`)
+    }
+  },
+  "Gandaki Province": {
+    "Kaski": {
+      municipalities: ["Pokhara Metropolitan", "Annapurna Rural Municipality"],
+      wards: Array.from({length: 33}, (_, i) => `Ward ${i + 1}`)
+    },
+    "Tanahun": {
+      municipalities: ["Bhanu Municipality", "Bhimad Municipality", "Myagde Rural Municipality"],
+      wards: Array.from({length: 12}, (_, i) => `Ward ${i + 1}`)
+    },
+    "Nawalpur": {
+      municipalities: ["Gaindakot Metropolitan", "Ratnanagar Municipality", "Kawasoti Municipality"],
+      wards: Array.from({length: 26}, (_, i) => `Ward ${i + 1}`)
+    }
+  },
+  "Lumbini Province": {
+    "Rupandehi": {
+      municipalities: ["Butwal Sub-Metropolitan", "Siddharthanagar Municipality", "Tilottama Municipality"],
+      wards: Array.from({length: 19}, (_, i) => `Ward ${i + 1}`)
+    },
+    "Kapilvastu": {
+      municipalities: ["Kapilvastu Municipality", "Buddhabhumi Municipality"],
+      wards: Array.from({length: 12}, (_, i) => `Ward ${i + 1}`)
+    }
+  },
+  "Madhesh Province": {
+    "Dhanusha": {
+      municipalities: ["Janakpur Sub-Metropolitan", "Chhireshwarnath Municipality"],
+      wards: Array.from({length: 25}, (_, i) => `Ward ${i + 1}`)
+    },
+    "Mahottari": {
+      municipalities: ["Jaleshwar Municipality", "Bardibas Municipality"],
+      wards: Array.from({length: 14}, (_, i) => `Ward ${i + 1}`)
+    }
+  },
+  "Karnali Province": {
+    "Surkhet": {
+      municipalities: ["Birendranagar Municipality", "Gurbhakot Municipality"],
+      wards: Array.from({length: 12}, (_, i) => `Ward ${i + 1}`)
+    },
+    "Dailekh": {
+      municipalities: ["Narayan Municipality", "Dullu Municipality"],
+      wards: Array.from({length: 11}, (_, i) => `Ward ${i + 1}`)
+    }
+  },
+  "Sudurpashchim Province": {
+    "Kailali": {
+      municipalities: ["Dhangadhi Sub-Metropolitan", "Tikapur Municipality"],
+      wards: Array.from({length: 19}, (_, i) => `Ward ${i + 1}`)
+    },
+    "Kanchanpur": {
+      municipalities: ["Bhimdatta Municipality", "Punarbas Municipality"],
+      wards: Array.from({length: 15}, (_, i) => `Ward ${i + 1}`)
+    }
+  }
+};
+
+const provinces = Object.keys(nepalAdminData);
+
+const Register = () => {
+  const navigate = useNavigate();
+  const [currentStep, setCurrentStep] = useState(1);
+  const [sampleMethod, setSampleMethod] = useState<"courier" | "hospital" | null>(null);
+  const [consentChecked, setConsentChecked] = useState(false);
+
+  // Form data state
+  const [formData, setFormData] = useState({
+    firstName: "",
+    lastName: "",
+    dob: "",
+    gender: "",
+    bloodType: "",
+    phone: "",
+    email: "",
+    password: "",
+    emergencyContact: "",
+    emergencyPhone: "",
+    province: "",
+    district: "",
+    municipality: "",
+    ward: "",
+    street: ""
+  });
+
+  // Cascading dropdown state
+  const [availableDistricts, setAvailableDistricts] = useState<string[]>([]);
+  const [availableMunicipalities, setAvailableMunicipalities] = useState<string[]>([]);
+  const [availableWards, setAvailableWards] = useState<string[]>([]);
+
+  const handleInputChange = (field: string, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+    
+    // Handle cascading updates
+    if (field === 'province') {
+      // Reset dependent fields
+      setFormData(prev => ({ ...prev, district: '', municipality: '', ward: '' }));
+      setAvailableMunicipalities([]);
+      setAvailableWards([]);
+      // Set available districts for selected province
+      if (value && nepalAdminData[value]) {
+        setAvailableDistricts(Object.keys(nepalAdminData[value]));
+      } else {
+        setAvailableDistricts([]);
+      }
+    } else if (field === 'district') {
+      // Reset dependent fields
+      setFormData(prev => ({ ...prev, municipality: '', ward: '' }));
+      setAvailableWards([]);
+      // Set available municipalities for selected district
+      if (formData.province && value && nepalAdminData[formData.province]?.[value]) {
+        setAvailableMunicipalities(nepalAdminData[formData.province][value].municipalities);
+      } else {
+        setAvailableMunicipalities([]);
+      }
+    } else if (field === 'municipality') {
+      // Reset ward
+      setFormData(prev => ({ ...prev, ward: '' }));
+      // Set available wards for selected municipality
+      if (formData.province && formData.district && nepalAdminData[formData.province]?.[formData.district]) {
+        setAvailableWards(nepalAdminData[formData.province][formData.district].wards);
+      } else {
+        setAvailableWards([]);
+      }
+    }
+  };
+
+  const handleNext = () => {
+    // Validate current step before proceeding
+    if (currentStep === 1) {
+      // Step 1: Personal Details validation
+      if (!formData.firstName || !formData.lastName || !formData.dob || !formData.gender || !formData.bloodType) {
+        alert('Please fill in all required fields: First Name, Last Name, Date of Birth, Gender, and Blood Type');
+        return;
+      }
+    } else if (currentStep === 2) {
+      // Step 2: Contact Information validation
+      if (!formData.phone || !formData.email || !formData.password) {
+        alert('Please fill in all required fields: Phone Number, Email Address, and Password');
+        return;
+      }
+      // Basic email validation
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(formData.email)) {
+        alert('Please enter a valid email address');
+        return;
+      }
+      // Basic phone validation
+      if (formData.phone.length < 10) {
+        alert('Please enter a valid phone number');
+        return;
+      }
+    } else if (currentStep === 3) {
+      // Step 3: Address validation
+      if (!formData.province || !formData.district || !formData.municipality || !formData.ward || !formData.street) {
+        alert('Please fill in all required fields: Province, District, Municipality, Ward, and Street Address');
+        return;
+      }
+    } else if (currentStep === 4) {
+      // Step 4: Sample Method validation
+      if (!sampleMethod) {
+        alert('Please select a sample submission method');
+        return;
+      }
+    }
+    
+    if (currentStep < 5) {
+      setCurrentStep(currentStep + 1);
+    }
+  };
+
+  const handleBack = () => {
+    if (currentStep > 1) {
+      setCurrentStep(currentStep - 1);
+    }
+  };
+
+  const handleSubmit = () => {
+    // Generate unique donor ID
+    const donorId = `CL-${new Date().getFullYear()}-${Math.floor(10000 + Math.random() * 90000)}`;
+    
+    // Prepare donor data
+    const donorData = {
+      ...formData,
+      id: donorId,
+      registrationDate: new Date().toISOString(),
+      status: "pending", // pending → sample_received → report_submitted → approved
+      sampleStatus: "pending", // pending → collected → processing → completed
+      sampleMethod: sampleMethod === "courier" ? "Courier Pickup" : "Hospital Visit",
+      scheduledDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
+      scheduledTime: "Morning (9 AM - 12 PM)",
+      age: new Date().getFullYear() - new Date(formData.dob).getFullYear()
+    };
+
+    // Get existing donors list
+    const existingDonors = JSON.parse(localStorage.getItem('allDonors') || '[]');
+    existingDonors.push(donorData);
+    
+    // Store in localStorage
+    localStorage.setItem('allDonors', JSON.stringify(existingDonors));
+    localStorage.setItem('donorData', JSON.stringify(donorData));
+    localStorage.setItem('donorEmail', formData.email);
+    localStorage.setItem('donorPassword', formData.password);
+    localStorage.setItem('isNewRegistration', 'true');
+    
+    navigate("/donor/dashboard");
+  };
+
+  return (
+    <div className="min-h-screen flex flex-col bg-muted/20">
+      
+      <main className="flex-1 py-8 lg:py-12">
+        <div className="container max-w-4xl">
+          {/* Progress Steps */}
+          <div className="mb-8">
+            <div className="flex items-center justify-between">
+              {steps.map((step, index) => (
+                <div key={step.id} className="flex items-center">
+                  <div className="flex flex-col items-center">
+                    <div
+                      className={`flex h-10 w-10 items-center justify-center rounded-full border-2 transition-colors ${
+                        currentStep > step.id
+                          ? "border-primary bg-primary text-primary-foreground"
+                          : currentStep === step.id
+                          ? "border-primary bg-primary/10 text-primary"
+                          : "border-muted-foreground/30 bg-muted text-muted-foreground"
+                      }`}
+                    >
+                      {currentStep > step.id ? (
+                        <CheckCircle2 className="h-5 w-5" />
+                      ) : (
+                        <step.icon className="h-5 w-5" />
+                      )}
+                    </div>
+                    <span className={`mt-2 hidden text-xs font-medium sm:block ${
+                      currentStep >= step.id ? "text-foreground" : "text-muted-foreground"
+                    }`}>
+                      {step.title}
+                    </span>
+                  </div>
+                  {index < steps.length - 1 && (
+                    <div
+                      className={`mx-2 h-0.5 w-12 sm:w-20 lg:w-28 ${
+                        currentStep > step.id ? "bg-primary" : "bg-muted-foreground/30"
+                      }`}
+                    />
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Form Card */}
+          <Card className="border-border shadow-lg">
+            <CardHeader>
+              <CardTitle className="text-2xl">
+                {steps[currentStep - 1].title}
+              </CardTitle>
+              <CardDescription>
+                {currentStep === 1 && "Tell us about yourself"}
+                {currentStep === 2 && "How can we reach you?"}
+                {currentStep === 3 && "Where are you located?"}
+                {currentStep === 4 && "Choose how you'll submit your sample"}
+                {currentStep === 5 && "Review and confirm your registration"}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {/* Step 1: Personal Details */}
+              {currentStep === 1 && (
+                <div className="space-y-6">
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="firstName">First Name *</Label>
+                      <Input 
+                        id="firstName" 
+                        placeholder="Enter your first name"
+                        value={formData.firstName}
+                        onChange={(e) => handleInputChange('firstName', e.target.value)}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="lastName">Last Name *</Label>
+                      <Input 
+                        id="lastName" 
+                        placeholder="Enter your last name"
+                        value={formData.lastName}
+                        onChange={(e) => handleInputChange('lastName', e.target.value)}
+                        required
+                      />
+                    </div>
+                  </div>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="dob">Date of Birth *</Label>
+                      <Input 
+                        id="dob" 
+                        type="date"
+                        value={formData.dob}
+                        onChange={(e) => handleInputChange('dob', e.target.value)}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Gender *</Label>
+                      <Select value={formData.gender} onValueChange={(value) => handleInputChange('gender', value)} required>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select gender" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="male">Male</SelectItem>
+                          <SelectItem value="female">Female</SelectItem>
+                          <SelectItem value="other">Other</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Blood Type *</Label>
+                    <Select value={formData.bloodType} onValueChange={(value) => handleInputChange('bloodType', value)} required>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select blood type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {bloodTypes.map((type) => (
+                          <SelectItem key={type} value={type}>
+                            {type}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              )}
+
+              {/* Step 2: Contact Information */}
+              {currentStep === 2 && (
+                <div className="space-y-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="phone">Phone Number *</Label>
+                    <Input 
+                      id="phone" 
+                      type="tel" 
+                      placeholder="+977 98XXXXXXXX"
+                      value={formData.phone}
+                      onChange={(e) => handleInputChange('phone', e.target.value)}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="email">Email Address *</Label>
+                    <Input 
+                      id="email" 
+                      type="email" 
+                      placeholder="your@email.com"
+                      value={formData.email}
+                      onChange={(e) => handleInputChange('email', e.target.value)}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="password">Password *</Label>
+                    <Input 
+                      id="password" 
+                      type="password" 
+                      placeholder="Create a password"
+                      value={formData.password}
+                      onChange={(e) => handleInputChange('password', e.target.value)}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="emergencyContact">Emergency Contact Name</Label>
+                    <Input 
+                      id="emergencyContact" 
+                      placeholder="Emergency contact name"
+                      value={formData.emergencyContact}
+                      onChange={(e) => handleInputChange('emergencyContact', e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="emergencyPhone">Emergency Contact Phone</Label>
+                    <Input 
+                      id="emergencyPhone" 
+                      type="tel" 
+                      placeholder="+977 98XXXXXXXX"
+                      value={formData.emergencyPhone}
+                      onChange={(e) => handleInputChange('emergencyPhone', e.target.value)}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Step 3: Address */}
+              {currentStep === 3 && (
+                <div className="space-y-6">
+                  <div className="space-y-2">
+                    <Label>Province *</Label>
+                    <Select value={formData.province} onValueChange={(value) => handleInputChange('province', value)} required>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select province" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {provinces.map((province) => (
+                          <SelectItem key={province} value={province}>
+                            {province}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>District *</Label>
+                    <Select 
+                      value={formData.district} 
+                      onValueChange={(value) => handleInputChange('district', value)} 
+                      required
+                      disabled={!formData.province}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder={formData.province ? "Select district" : "Select province first"} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {availableDistricts.map((district) => (
+                          <SelectItem key={district} value={district}>
+                            {district}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Municipality *</Label>
+                    <Select 
+                      value={formData.municipality} 
+                      onValueChange={(value) => handleInputChange('municipality', value)} 
+                      required
+                      disabled={!formData.district}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder={formData.district ? "Select municipality" : "Select district first"} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {availableMunicipalities.map((municipality) => (
+                          <SelectItem key={municipality} value={municipality}>
+                            {municipality}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Ward *</Label>
+                    <Select 
+                      value={formData.ward} 
+                      onValueChange={(value) => handleInputChange('ward', value)} 
+                      required
+                      disabled={!formData.municipality}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder={formData.municipality ? "Select ward" : "Select municipality first"} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {availableWards.map((ward) => (
+                          <SelectItem key={ward} value={ward}>
+                            {ward}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="street">Street Address *</Label>
+                    <Input 
+                      id="street" 
+                      placeholder="Enter street address (e.g., House No, Tole name)"
+                      value={formData.street}
+                      onChange={(e) => handleInputChange('street', e.target.value)}
+                      required
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Step 4: Sample Submission Method */}
+              {currentStep === 4 && (
+                <div className="space-y-6">
+                  <RadioGroup
+                    value={sampleMethod || ""}
+                    onValueChange={(value) => setSampleMethod(value as "courier" | "hospital")}
+                    className="grid gap-4 sm:grid-cols-2"
+                  >
+                    <Label
+                      htmlFor="courier"
+                      className={`cursor-pointer rounded-lg border-2 p-6 transition-all ${
+                        sampleMethod === "courier"
+                          ? "border-primary bg-primary/5"
+                          : "border-border hover:border-primary/50"
+                      }`}
+                    >
+                      <RadioGroupItem value="courier" id="courier" className="sr-only" />
+                      <div className="flex flex-col items-center text-center">
+                        <div className={`mb-4 rounded-full p-3 ${
+                          sampleMethod === "courier" ? "bg-primary/10" : "bg-muted"
+                        }`}>
+                          <Truck className={`h-8 w-8 ${
+                            sampleMethod === "courier" ? "text-primary" : "text-muted-foreground"
+                          }`} />
+                        </div>
+                        <h3 className="mb-2 font-semibold">Courier Pickup</h3>
+                        <p className="text-sm text-muted-foreground">
+                          We'll send a courier to collect your sample from your home at a convenient time.
+                        </p>
+                      </div>
+                    </Label>
+                    
+                    <Label
+                      htmlFor="hospital"
+                      className={`cursor-pointer rounded-lg border-2 p-6 transition-all ${
+                        sampleMethod === "hospital"
+                          ? "border-primary bg-primary/5"
+                          : "border-border hover:border-primary/50"
+                      }`}
+                    >
+                      <RadioGroupItem value="hospital" id="hospital" className="sr-only" />
+                      <div className="flex flex-col items-center text-center">
+                        <div className={`mb-4 rounded-full p-3 ${
+                          sampleMethod === "hospital" ? "bg-primary/10" : "bg-muted"
+                        }`}>
+                          <Building2 className={`h-8 w-8 ${
+                            sampleMethod === "hospital" ? "text-primary" : "text-muted-foreground"
+                          }`} />
+                        </div>
+                        <h3 className="mb-2 font-semibold">Hospital Visit</h3>
+                        <p className="text-sm text-muted-foreground">
+                          Visit one of our partner hospitals to submit your sample in person.
+                        </p>
+                      </div>
+                    </Label>
+                  </RadioGroup>
+
+                  {sampleMethod === "courier" && (
+                    <div className="rounded-lg border border-border bg-muted/30 p-4">
+                      <h4 className="mb-3 font-medium">Schedule Pickup</h4>
+                      <div className="grid gap-4 sm:grid-cols-2">
+                        <div className="space-y-2">
+                          <Label htmlFor="pickupDate">Preferred Date</Label>
+                          <Input id="pickupDate" type="date" />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Preferred Time</Label>
+                          <Select>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select time slot" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="morning">Morning (9 AM - 12 PM)</SelectItem>
+                              <SelectItem value="afternoon">Afternoon (12 PM - 3 PM)</SelectItem>
+                              <SelectItem value="evening">Evening (3 PM - 6 PM)</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {sampleMethod === "hospital" && (
+                    <div className="rounded-lg border border-border bg-muted/30 p-4">
+                      <h4 className="mb-3 font-medium">Select Hospital</h4>
+                      <Select>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Choose a partner hospital" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="bir">Bir Hospital, Kathmandu</SelectItem>
+                          <SelectItem value="tribhuvan">Tribhuvan University Teaching Hospital</SelectItem>
+                          <SelectItem value="grande">Grande International Hospital</SelectItem>
+                          <SelectItem value="nepal">Nepal Cancer Hospital</SelectItem>
+                          <SelectItem value="chitwan">Chitwan Medical College</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Step 5: Consent & Review */}
+              {currentStep === 5 && (
+                <div className="space-y-6">
+                  <div className="rounded-lg border border-border bg-muted/30 p-6">
+                    <h4 className="mb-4 font-medium">Registration Summary</h4>
+                    <dl className="grid gap-3 text-sm">
+                      <div className="flex justify-between">
+                        <dt className="text-muted-foreground">Name:</dt>
+                        <dd className="font-medium">{formData.firstName} {formData.lastName}</dd>
+                      </div>
+                      <div className="flex justify-between">
+                        <dt className="text-muted-foreground">Email:</dt>
+                        <dd className="font-medium">{formData.email}</dd>
+                      </div>
+                      <div className="flex justify-between">
+                        <dt className="text-muted-foreground">Phone:</dt>
+                        <dd className="font-medium">{formData.phone}</dd>
+                      </div>
+                      <div className="flex justify-between">
+                        <dt className="text-muted-foreground">Blood Type:</dt>
+                        <dd className="font-medium">{formData.bloodType}</dd>
+                      </div>
+                      <div className="flex justify-between">
+                        <dt className="text-muted-foreground">Date of Birth:</dt>
+                        <dd className="font-medium">{formData.dob}</dd>
+                      </div>
+                      <div className="flex justify-between">
+                        <dt className="text-muted-foreground">Gender:</dt>
+                        <dd className="font-medium capitalize">{formData.gender}</dd>
+                      </div>
+                      <div className="flex justify-between">
+                        <dt className="text-muted-foreground">Location:</dt>
+                        <dd className="font-medium">{formData.municipality}, {formData.district}, {formData.province}</dd>
+                      </div>
+                      <div className="flex justify-between">
+                        <dt className="text-muted-foreground">Address:</dt>
+                        <dd className="font-medium">{formData.street}</dd>
+                      </div>
+                      <div className="flex justify-between">
+                        <dt className="text-muted-foreground">Sample Method:</dt>
+                        <dd className="font-medium">
+                          {sampleMethod === "courier" ? "Courier Pickup" : "Hospital Visit"}
+                        </dd>
+                      </div>
+                    </dl>
+                  </div>
+
+                  <div className="rounded-lg border border-border p-4">
+                    <div className="flex items-start gap-3">
+                      <Checkbox
+                        id="consent"
+                        checked={consentChecked}
+                        onCheckedChange={(checked) => setConsentChecked(checked as boolean)}
+                        className="mt-1"
+                      />
+                      <Label htmlFor="consent" className="text-sm leading-relaxed">
+                        I consent to the collection and processing of my personal and health 
+                        information for the purpose of stem cell donation matching. I understand 
+                        that my data will be stored securely and used only for matching purposes. 
+                        I agree to the Terms of Service and Privacy Policy.
+                      </Label>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Navigation Buttons */}
+              <div className="mt-8 flex justify-between">
+                <Button
+                  variant="outline"
+                  onClick={handleBack}
+                  disabled={currentStep === 1}
+                  className="gap-2"
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                  Back
+                </Button>
+                
+                {currentStep < 5 ? (
+                  <Button onClick={handleNext} className="gap-2">
+                    Next
+                    <ArrowRight className="h-4 w-4" />
+                  </Button>
+                ) : (
+                  <Button 
+                    onClick={handleSubmit} 
+                    disabled={!consentChecked}
+                    className="gap-2"
+                  >
+                    Complete Registration
+                    <CheckCircle2 className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </main>
+
+      <Footer />
+    </div>
+  );
+};
+
+export default Register;
