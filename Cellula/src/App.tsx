@@ -11,6 +11,8 @@ import HospitalLogin from "./pages/hospital/Login";
 import HospitalDashboard from "./pages/hospital/Dashboard";
 import AdminLogin from "./pages/admin/Login";
 import AdminDashboard from "./pages/admin/Dashboard";
+import BloodBankLogin from "./pages/bloodbank/Login";
+import BloodBankDashboard from "./pages/bloodbank/Dashboard";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -30,6 +32,8 @@ const App = () => (
           <Route path="/hospital/dashboard" element={<HospitalDashboard />} />
           <Route path="/admin/login" element={<AdminLogin />} />
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
+          <Route path="/bloodbank/login" element={<BloodBankLogin />} />
+          <Route path="/bloodbank/dashboard" element={<BloodBankDashboard />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

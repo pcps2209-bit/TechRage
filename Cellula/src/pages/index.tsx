@@ -155,7 +155,7 @@ const Index = () => {
     },
     {
       name: "Dr. Ramesh KC",
-      role: "Hospital Partner",
+      role: "Transplantation Doctor",
       content: "Cellula has revolutionized stem cell donation in Nepal. Their matching system is efficient and has helped many of our patients.",
       avatar: "RK",
     },

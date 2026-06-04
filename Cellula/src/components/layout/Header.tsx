@@ -62,6 +62,9 @@ const Header = () => {
             <Link to="/hospital/login">Hospital Login</Link>
           </Button>
           <Button variant="ghost" size="sm" asChild>
+            <Link to="/bloodbank/login">Blood Bank Login</Link>
+          </Button>
+          <Button variant="ghost" size="sm" asChild>
             <Link to="/admin/login">Lab Admin Login</Link>
           </Button>
           <Button size="sm" asChild>
@@ -110,6 +113,9 @@ const Header = () => {
             <hr className="my-2 border-border" />
             <Link to="/hospital/login" className="text-sm font-medium text-muted-foreground">
               Hospital Login
+            </Link>
+            <Link to="/bloodbank/login" className="text-sm font-medium text-muted-foreground">
+              Blood Bank Login
             </Link>
             <Link to="/admin/login" className="text-sm font-medium text-muted-foreground">
               Admin Login
